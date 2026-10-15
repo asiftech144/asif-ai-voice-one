@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asif AI Voice Studio</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #08111f;
+  color: white;
+}
+
+.container {
+  max-width: 600px;
+  margin: 30px auto;
+  padding: 25px;
+  background: #121f32;
+  border-radius: 20px;
+  border: 1px solid #29425f;
+}
+
+h1 {
+  text-align: center;
+  color: #45d6ff;
+}
+
+.subtitle {
+  text-align: center;
+  color: #b6c7da;
+}
+
+label {
+  display: block;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+textarea, select {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #38516e;
+  background: #091525;
+  color: white;
+  font-size: 16px;
+}
+
+textarea {
+  height: 150px;
+  resize: vertical;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 10px;
+  background: #16bde8;
+  color: #06111d;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+.secondary {
+  background: #263d59;
+  color: white;
+}
+
+#status {
+  margin-top: 15px;
+  color: #8de7ff;
+  text-align: center;
+  line-height: 1.5;
+}
+
+footer {
+  text-align: center;
+  color: #90a5bd;
+  font-size: 13px;
+  margin-top: 25px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>🎙️ Asif AI Voice Studio</h1>
+
+  <p class="subtitle">
+    Turn your text into speech — free to try!
+  </p>
+
+  <label for="text">Enter Your Text</label>
+
+  <textarea id="text"
+    placeholder="Type your English or Urdu text here..."></textarea>
+
+  <label for="voice">Choose Available Voice</label>
+  <select id="voice">
+    <option value="">Loading voices...</option>
+  </select>
+
+  <label for="speed">Voice Speed</label>
+  <select id="speed">
+    <option value="0.75">Slow</option>
+    <option value="1" selected>Normal</option>
+    <option value="1.2">Fast</option>
+  </select>
+
+  <button id="speak">▶ Listen to Voice</button>
+  <button id="stop" class="secondary">⏹ Stop Voice</button>
+  <button id="download" class="secondary">
+    ⬇ Save Audio (when supported)
+  </button>
+
+  <p id="status">
+    Ready! Enter text and select a voice.
+  </p>
+
+  <footer>
+    Asif AI Voice Studio · Free browser voice demo
+  </footer>
+</div>
+
+<script>
+const text = document.getElementById("text");
+const voiceSelect = document.getElementById("voice");
+const speed = document.getElementById("speed");
+const status = document.getElementById("status");
+const speakButton = document.getElementById("speak");
+
+let voices = [];
+let utterance = null;
+
+function loadVoices() {
+  if (!("speechSynthesis" in window)) {
+    status.textContent =
+      "Sorry! Your browser does not support speech.";
+    return;
+  }
+
+  voices = speechSynthesis.getVoices();
+  voiceSelect.innerHTML = "";
+
+  if (voices.length === 0) {
+    voiceSelect.add(new Option(
+      "Default browser voice", ""
+    ));
+    return;
+  }
+
+  voices.forEach((voice, index) => {
+    const option = new Option(
+      voice.name + " (" + voice.lang + ")",
+      index
+    );
+    voiceSelect.add(option);
+  });
+
+  const preferred = voices.findIndex(v =>
+    /^en/i.test(v.lang)
+  );
+
+  if (preferred >= 0) {
+    voiceSelect.value = String(preferred);
+  }
+}
+
+if ("speechSynthesis" in window) {
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+speakButton.addEventListener("click", () => {
+  const value = text.value.trim();
+
+  if (!value) {
+    status.textContent = "Please enter some text first.";
+    return;
+  }
+
+  if (!("speechSynthesis" in window)) {
+    status.textContent =
+      "Speech is not supported in this browser.";
+    return;
+  }
+
+  speechSynthesis.cancel();
+
+  utterance = new SpeechSynthesisUtterance(value);
+  utterance.rate = Number(speed.value);
+
+  const selected = voiceSelect.value;
+
+  if (selected !== "" && voices[Number(selected)]) {
+    utterance.voice = voices[Number(selected)];
+  }
+
+  utterance.onstart = () => {
+    status.textContent = "Playing your voice...";
+  };
+
+  utterance.onend = () => {
+    status.textContent = "Voice finished.";
+  };
+
+  utterance.onerror = () => {
+    status.textContent =
+      "Voice failed. Please try another browser voice.";
+  };
+
+  speechSynthesis.speak(utterance);
+});
+
+document.getElementById("stop").onclick = () => {
+  if ("speechSynthesis" in window) {
+    speechSynthesis.cancel();
+  }
+  status.textContent = "Voice stopped.";
+};
+
+document.getElementById("download").onclick = () => {
+  status.textContent =
+    "This browser voice demo cannot directly export MP3. " +
+    "Audio download requires a separate recording or voice API.";
+};
+</script>
+
+</body>
+</html>
